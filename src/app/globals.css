@@ -1,0 +1,434 @@
+@import "tailwindcss";
+
+/* Breadchain design system: tokens, Pogaca @font-face, component classes. */
+@import "@breadcoop/ui/theme";
+
+/* Keep @breadcoop/ui's prebuilt classes from being purged. */
+@source "../../node_modules/@breadcoop/ui";
+
+/* ================= Democratic Tech Fund brand overlay =================
+   DTF's identity, pulled from democratictech.fund: a dark maroon ground
+   (#2c1212), warm cream ink (#f3e7d0), a bold red primary, orange + yellow
+   accents, Boldonse for display and Atkinson Hyperlegible Next for text.
+   Every design-system token below re-points the @breadcoop/ui palette, so
+   all existing bg-core-orange / text-text-standard / paper-* utilities pick
+   up DTF's colors without touching component markup. The one structural
+   change from the (light) O.U.R.COOP fork is that this is a *dark* theme:
+   the "paper" surfaces become elevated maroons and the ink becomes cream. */
+
+/* Boldonse — DTF's display face (single heavy weight). latin + latin-ext. */
+@font-face {
+  font-family: "Boldonse";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/boldonse-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Boldonse";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/boldonse-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+/* Atkinson Hyperlegible Next — DTF's body face (variable weight). The font
+   Braille Institute designed for maximum legibility; fitting for a project
+   about the internet belonging to everyone. latin + latin-ext. */
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("../fonts/atkinson-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("../fonts/atkinson-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  /* Primary: DTF red (buttons, links, the "take it back" energy). */
+  --color-core-orange: #cf2626;
+  --color-primary-orange: #cf2626;
+  --color-orange-0: #5a2222; /* dark red-tint surface (outline hover bg) */
+  --color-orange-1: #b81f1f; /* hover (red-dark) */
+  --color-orange-2: #a01a1a; /* active */
+
+  /* Secondary accent: DTF orange (was jade). */
+  --color-primary-jade: #ee7e2c;
+  --color-jade-0: #f4a866;
+  --color-jade-1: #e88f3f;
+  --color-jade-2: #d8661a; /* hover (orange-dark) */
+
+  /* Info: a muted blue that sits calmly on maroon. */
+  --color-primary-blue: #6d8cc9;
+  --color-blue-0: #c1cde4;
+  --color-blue-1: #8aa3d3;
+  --color-blue-2: #4c6aa0;
+
+  /* Paper → elevated maroon surfaces (dark theme: paper-0 is the lightest,
+     paper-main the page, paper-2 the recessed/darkest). */
+  --color-paper-main: #2c1212;
+  --color-paper-0: #3d1e1c; /* elevated card */
+  --color-paper-1: #351717; /* card */
+  --color-paper-2: #241010; /* recessed */
+
+  /* Ink & greys → cream, with warm muted taupes for secondary text. */
+  --color-surface-ink: #f3e7d0;
+  --color-text-standard: #f3e7d0;
+  --color-surface-grey: #b6a692;
+  --color-surface-grey-2: #8c7a68;
+  --color-surface-brown: #3a2020;
+  --color-surface-brown-1: #1c0d0d;
+
+  /* System: DTF green/red/orange, brightened for contrast on maroon. */
+  --color-system-green: #3aa85f;
+  --color-system-red: #cf2626;
+  --color-system-warning: #ee7e2c;
+  --color-red-0: #5a2222;
+  --color-red-1: #7a2626;
+  --color-red-main: #cf2626;
+
+  /* Fonts: Boldonse for display, Atkinson Hyperlegible Next for body. */
+  --font-breadDisplay:
+    "Boldonse", "Arial Black", "Helvetica Neue", Arial, ui-sans-serif,
+    system-ui, sans-serif;
+  --font-breadBody:
+    "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* theme.css wires its @theme fonts + bg/fg through :root vars — repoint those
+   too (unlayered :root beats the design system's prefers-color-scheme block). */
+:root {
+  --background: #2c1212;
+  --foreground: #f3e7d0;
+  --font-breadDisplay:
+    "Boldonse", "Arial Black", "Helvetica Neue", Arial, ui-sans-serif,
+    system-ui, sans-serif;
+  --font-breadBody:
+    "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Dark app — force the maroon ground (unlayered so it beats the design
+   system's light default), and offset anchor jumps so section headings
+   don't hide under the sticky nav. */
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+html,
+body {
+  background-color: #2c1212; /* paper-main */
+}
+/* Unlayered so it beats @breadcoop/ui's own body{} rule (which points at an
+   undefined --font-inter). Inherited text (table cells, inputs) then uses
+   Atkinson like the design-system components do. */
+body {
+  font-family: var(--font-breadBody);
+  color: var(--color-text-standard);
+}
+:target {
+  scroll-margin-top: 5rem;
+}
+
+/* Boldonse is an extremely heavy, wide display face — the design system's
+   default heading classes crank it to 7rem uppercase, which overflows. Tame
+   them: modest sizes, normal case, single weight (Boldonse has only one). */
+.text-h1 {
+  font-family: var(--font-breadDisplay);
+  font-weight: 400;
+  font-size: clamp(2rem, 4.5vw + 0.6rem, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+.text-h2 {
+  font-family: var(--font-breadDisplay);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3vw + 0.5rem, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+.text-h3 {
+  font-family: var(--font-breadDisplay);
+  font-weight: 400;
+  font-size: clamp(1.2rem, 1.6vw + 0.6rem, 1.8rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+/* The "fund" primary button colors its label with text-paper-main, which was
+   near-white in the original light theme but is dark maroon here — dark text
+   on a red/orange fill. Force a light label on the colored fills for contrast.
+   (This class combo only occurs on those buttons; the CTA band sets text-white
+   explicitly and is unaffected.) */
+.bg-core-orange.text-paper-main,
+.bg-primary-orange.text-paper-main,
+.bg-primary-jade.text-paper-main {
+  color: #f7ecd8 !important;
+}
+
+/* @breadcoop/ui's secondary buttons hardcode a peach background (not a theme
+   token) two ways: the LiftedButton preset sets an inline --btn-bg, and the
+   plain Button variant uses arbitrary Tailwind classes (bg-[#FBDED1] etc.).
+   Repoint both to a warm cream so secondary buttons read on the maroon
+   ground; !important beats the inline custom property and the utility layer. */
+.lifted-button[style*="#FBDED1"] {
+  background-color: #f3e7d0 !important;
+  color: #2c1212 !important;
+}
+.lifted-button[style*="#FBDED1"]:hover {
+  background-color: #fff4e0 !important;
+}
+.bg-\[\#FBDED1\] {
+  background-color: #f3e7d0 !important;
+  color: #2c1212 !important;
+}
+.hover\:bg-\[\#FFF1EA\]:hover {
+  background-color: #fff4e0 !important;
+}
+.active\:bg-\[\#FBDED1\]:active {
+  background-color: #f3e7d0 !important;
+}
+
+@layer base {
+  body {
+    @apply text-text-standard font-breadBody antialiased;
+  }
+}
+
+@layer components {
+  /* Constrained, centered page gutter used across landing sections. */
+  .section-container {
+    @apply mx-auto w-full max-w-6xl px-6;
+  }
+}
+
+/* --- Yield-slice explainer animations (respect reduced-motion via JS) --- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+/* The yield layer lifting off the top when it gets sliced. */
+@keyframes slice-lift {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.animate-slice-lift {
+  animation: slice-lift 1.8s ease-in-out infinite;
+}
+
+/* Subtle forward nudge for an active flow arrow. */
+@keyframes nudge {
+  0%,
+  100% {
+    transform: rotate(var(--tw-rotate, 0)) translateX(0);
+  }
+  50% {
+    transform: rotate(var(--tw-rotate, 0)) translateX(3px);
+  }
+}
+.animate-nudge {
+  animation: nudge 1.4s ease-in-out infinite;
+}
+
+/* --- "How it Works" step illustrations (looping, purely decorative) ------ */
+
+/* Coins dropping from members into the community pool. */
+@keyframes hiw-coin-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.8);
+  }
+  18% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(30px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.9);
+  }
+}
+.hiw-coin {
+  animation: hiw-coin-drop 2.6s ease-in infinite;
+}
+
+/* The pool level gently rising as deposits land. */
+@keyframes hiw-pool-fill {
+  0%,
+  100% {
+    height: 46%;
+  }
+  50% {
+    height: 72%;
+  }
+}
+.hiw-pool-fill {
+  animation: hiw-pool-fill 3.4s ease-in-out infinite;
+}
+
+/* The yield layer growing on top of an untouched principal. */
+@keyframes hiw-yield-grow {
+  0%,
+  100% {
+    height: 22%;
+  }
+  50% {
+    height: 46%;
+  }
+}
+.hiw-yield-grow {
+  animation: hiw-yield-grow 3s ease-in-out infinite;
+}
+
+/* A badge rising to hint at accruing interest. */
+@keyframes hiw-rise {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.hiw-rise {
+  animation: hiw-rise 2.4s ease-in-out infinite;
+}
+
+/* Vote-allocation bars tallying up. */
+@keyframes hiw-bar {
+  0% {
+    transform: scaleX(0);
+  }
+  55%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+.hiw-bar {
+  animation: hiw-bar 3.2s ease-in-out infinite;
+}
+
+/* Yield streaming out to funded recipients. */
+@keyframes hiw-flow {
+  0% {
+    opacity: 0;
+    transform: translate(0, -50%);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+    transform: translate(48px, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(56px, -50%);
+  }
+}
+.hiw-flow {
+  animation: hiw-flow 1.9s ease-in-out infinite;
+}
+
+/* Recipient tiles lighting up as they receive funds. */
+@keyframes hiw-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+.hiw-pulse {
+  animation: hiw-pulse 1.9s ease-in-out infinite;
+}
+
+/* Collateral / loan columns filling upward (origin set via `origin-bottom`). */
+@keyframes hiw-grow-y {
+  0% {
+    transform: scaleY(0);
+  }
+  55%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+.hiw-grow-y {
+  animation: hiw-grow-y 3s ease-in-out infinite;
+}
+
+/* Collateral value fluctuating with the market — but staying above the loan. */
+@keyframes hiw-dip {
+  0%,
+  100% {
+    height: 82%;
+  }
+  50% {
+    height: 60%;
+  }
+}
+.hiw-dip {
+  animation: hiw-dip 3.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiw-coin,
+  .hiw-pool-fill,
+  .hiw-yield-grow,
+  .hiw-rise,
+  .hiw-bar,
+  .hiw-flow,
+  .hiw-pulse,
+  .hiw-grow-y,
+  .hiw-dip {
+    animation: none !important;
+  }
+}

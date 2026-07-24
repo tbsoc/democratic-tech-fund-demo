@@ -1,0 +1,337 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {TestWrapper} from "./TestWrapper.sol";
+import {AdminRecipientRegistry} from "../src/implementation/registries/AdminRecipientRegistry.sol";
+import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+contract AdminRecipientRegistryTest is TestWrapper {
+    AdminRecipientRegistry public registry;
+
+    address public constant ADMIN = address(0xAD);
+    address public constant RECIPIENT_1 = address(0x1);
+    address public constant RECIPIENT_2 = address(0x2);
+    address public constant RECIPIENT_3 = address(0x3);
+    address public constant RECIPIENT_4 = address(0x4);
+
+    function setUp() public {
+        AdminRecipientRegistry impl = new AdminRecipientRegistry();
+        bytes memory initData = abi.encodeWithSignature("initialize(address)", ADMIN);
+        registry = AdminRecipientRegistry(address(new ERC1967Proxy(address(impl), initData)));
+    }
+
+    function test_WhenInitializing() external view {
+        // it should set admin and zero recipients
+        assertEq(registry.owner(), ADMIN);
+        assertEq(registry.getRecipientCount(), 0);
+    }
+
+    function test_WhenQueuingASingleAddition() external {
+        // it should queue recipient and process correctly
+        vm.prank(ADMIN);
+        vm.expectEmit(true, false, false, false);
+        emit IRecipientRegistry.RecipientQueued(RECIPIENT_1, true);
+        registry.queueRecipientAddition(RECIPIENT_1);
+
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_1));
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+
+        address[] memory expectedAdded = new address[](1);
+        expectedAdded[0] = RECIPIENT_1;
+        address[] memory expectedRemoved = new address[](0);
+        address[] memory expectedNew = new address[](1);
+        expectedNew[0] = RECIPIENT_1;
+
+        vm.expectEmit(true, false, false, false);
+        emit IRecipientRegistry.RecipientAdded(RECIPIENT_1);
+        vm.expectEmit(false, false, false, true);
+        emit IRecipientRegistry.QueueProcessed(expectedAdded, expectedRemoved, expectedNew);
+        registry.processQueue();
+
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+        assertEq(registry.getRecipientCount(), 1);
+        assertFalse(registry.isQueuedForAddition(RECIPIENT_1));
+
+        address[] memory recipients = registry.getRecipients();
+        assertEq(recipients.length, 1);
+        assertEq(recipients[0], RECIPIENT_1);
+    }
+
+    function test_WhenQueuingMultipleAdditions() external {
+        // it should queue and process all recipients
+        address[] memory toAdd = new address[](3);
+        toAdd[0] = RECIPIENT_1;
+        toAdd[1] = RECIPIENT_2;
+        toAdd[2] = RECIPIENT_3;
+
+        vm.prank(ADMIN);
+        registry.queueRecipientsAddition(toAdd);
+
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_1));
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_2));
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_3));
+
+        registry.processQueue();
+
+        assertEq(registry.getRecipientCount(), 3);
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+        assertTrue(registry.isRecipient(RECIPIENT_2));
+        assertTrue(registry.isRecipient(RECIPIENT_3));
+    }
+
+    function test_WhenQueuingARemoval() external {
+        // it should remove recipient after processing
+        vm.startPrank(ADMIN);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.queueRecipientAddition(RECIPIENT_2);
+        registry.processQueue();
+
+        vm.expectEmit(true, false, false, false);
+        emit IRecipientRegistry.RecipientQueued(RECIPIENT_1, false);
+        registry.queueRecipientRemoval(RECIPIENT_1);
+
+        address[] memory expectedAdded = new address[](0);
+        address[] memory expectedRemoved = new address[](1);
+        expectedRemoved[0] = RECIPIENT_1;
+        address[] memory expectedNew = new address[](1);
+        expectedNew[0] = RECIPIENT_2;
+
+        vm.expectEmit(true, false, false, false);
+        emit IRecipientRegistry.RecipientRemoved(RECIPIENT_1);
+        vm.expectEmit(false, false, false, true);
+        emit IRecipientRegistry.QueueProcessed(expectedAdded, expectedRemoved, expectedNew);
+        registry.processQueue();
+        vm.stopPrank();
+
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+        assertTrue(registry.isRecipient(RECIPIENT_2));
+        assertEq(registry.getRecipientCount(), 1);
+    }
+
+    function test_WhenQueuingMultipleRemovals() external {
+        // it should remove selected recipients
+        vm.startPrank(ADMIN);
+
+        // Add recipients
+        address[] memory toAdd = new address[](4);
+        toAdd[0] = RECIPIENT_1;
+        toAdd[1] = RECIPIENT_2;
+        toAdd[2] = RECIPIENT_3;
+        toAdd[3] = RECIPIENT_4;
+        registry.queueRecipientsAddition(toAdd);
+        registry.processQueue();
+
+        // Remove some
+        address[] memory toRemove = new address[](2);
+        toRemove[0] = RECIPIENT_1;
+        toRemove[1] = RECIPIENT_3;
+        registry.queueRecipientsRemoval(toRemove);
+        registry.processQueue();
+
+        vm.stopPrank();
+
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+        assertTrue(registry.isRecipient(RECIPIENT_2));
+        assertFalse(registry.isRecipient(RECIPIENT_3));
+        assertTrue(registry.isRecipient(RECIPIENT_4));
+        assertEq(registry.getRecipientCount(), 2);
+    }
+
+    function test_RevertWhen_QueuingAnInvalidRecipient() external {
+        // it should revert
+        vm.prank(ADMIN);
+        vm.expectRevert();
+        registry.queueRecipientAddition(address(0));
+    }
+
+    function test_RevertWhen_QueuingADuplicateRecipient() external {
+        // it should revert
+        vm.startPrank(ADMIN);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+
+        vm.expectRevert();
+        registry.queueRecipientAddition(RECIPIENT_1);
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_RemovingANonExistentRecipient() external {
+        // it should revert
+        vm.prank(ADMIN);
+        vm.expectRevert();
+        registry.queueRecipientRemoval(RECIPIENT_1);
+    }
+
+    function test_RevertWhen_ANonAdminQueuesAddition() external {
+        // it should revert
+        vm.prank(address(0xdead));
+        vm.expectRevert();
+        registry.queueRecipientAddition(RECIPIENT_1);
+    }
+
+    function test_RevertWhen_ANonAdminQueuesRemoval() external {
+        // it should revert
+        vm.prank(ADMIN);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+
+        vm.prank(address(0xdead));
+        vm.expectRevert();
+        registry.queueRecipientRemoval(RECIPIENT_1);
+    }
+
+    function test_WhenTransferringAdmin() external {
+        // it should allow new admin and revoke old
+        address newAdmin = address(0xBEEF);
+
+        vm.prank(ADMIN);
+        registry.transferAdmin(newAdmin);
+
+        assertEq(registry.owner(), newAdmin);
+
+        // New admin can queue
+        vm.prank(newAdmin);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+
+        // Old admin cannot
+        vm.prank(ADMIN);
+        vm.expectRevert();
+        registry.queueRecipientAddition(RECIPIENT_2);
+    }
+
+    function test_WhenRe_queuingAfterRemoval() external {
+        // it should allow re-adding a previously removed recipient
+        vm.startPrank(ADMIN);
+
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+
+        registry.queueRecipientRemoval(RECIPIENT_1);
+        registry.processQueue();
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+
+        // Re-add should succeed (queue is empty, no stale state)
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+
+        vm.stopPrank();
+    }
+
+    function test_WhenRe_queuingAfterClear() external {
+        // it should allow re-adding after clearing addition queue
+        vm.startPrank(ADMIN);
+
+        registry.queueRecipientAddition(RECIPIENT_1);
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_1));
+
+        registry.clearAdditionQueue();
+        assertFalse(registry.isQueuedForAddition(RECIPIENT_1));
+
+        // Re-queue should succeed after clear
+        registry.queueRecipientAddition(RECIPIENT_1);
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_1));
+        registry.processQueue();
+        assertTrue(registry.isRecipient(RECIPIENT_1));
+
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_QueuingDuplicateInSameBatch() external {
+        // it should revert with QueueNotSorted
+        vm.startPrank(ADMIN);
+        registry.queueRecipientAddition(RECIPIENT_1);
+
+        vm.expectRevert(IRecipientRegistry.QueueNotSorted.selector);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_QueuingOutOfOrder() external {
+        // it should revert with QueueNotSorted
+        vm.startPrank(ADMIN);
+        registry.queueRecipientAddition(RECIPIENT_2);
+
+        // RECIPIENT_1 < RECIPIENT_2, so this should revert
+        vm.expectRevert(IRecipientRegistry.QueueNotSorted.selector);
+        registry.queueRecipientAddition(RECIPIENT_1);
+        vm.stopPrank();
+    }
+
+    function test_WhenCheckingCrossQueueIndependence() external {
+        // it should keep addition and removal queues independent
+        vm.startPrank(ADMIN);
+
+        // Add recipients first so they can be queued for removal
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.queueRecipientAddition(RECIPIENT_2);
+        registry.processQueue();
+
+        // Queue RECIPIENT_1 for removal and a new address for addition independently
+        registry.queueRecipientRemoval(RECIPIENT_1);
+        registry.queueRecipientAddition(RECIPIENT_3);
+
+        assertTrue(registry.isQueuedForRemoval(RECIPIENT_1));
+        assertTrue(registry.isQueuedForAddition(RECIPIENT_3));
+
+        registry.processQueue();
+
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+        assertTrue(registry.isRecipient(RECIPIENT_2));
+        assertTrue(registry.isRecipient(RECIPIENT_3));
+
+        vm.stopPrank();
+    }
+
+    function test_WhenClearingRemovalQueueAndRe_queuing() external {
+        // it should allow re-queuing for removal after clearing
+        vm.startPrank(ADMIN);
+
+        registry.queueRecipientAddition(RECIPIENT_1);
+        registry.processQueue();
+
+        registry.queueRecipientRemoval(RECIPIENT_1);
+        assertTrue(registry.isQueuedForRemoval(RECIPIENT_1));
+
+        registry.clearRemovalQueue();
+        assertFalse(registry.isQueuedForRemoval(RECIPIENT_1));
+
+        // Re-queue for removal should succeed after clear
+        registry.queueRecipientRemoval(RECIPIENT_1);
+        assertTrue(registry.isQueuedForRemoval(RECIPIENT_1));
+        registry.processQueue();
+        assertFalse(registry.isRecipient(RECIPIENT_1));
+
+        vm.stopPrank();
+    }
+
+    function test_WhenPerformingLargeScaleOperations() external {
+        // it should handle 100 additions and 50 removals
+        vm.startPrank(ADMIN);
+
+        // Queue many recipients
+        uint256 count = 100;
+        for (uint256 i = 1; i <= count; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
+            registry.queueRecipientAddition(address(uint160(i)));
+        }
+
+        registry.processQueue();
+        assertEq(registry.getRecipientCount(), count);
+
+        // Queue half for removal
+        for (uint256 i = 1; i <= 50; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
+            registry.queueRecipientRemoval(address(uint160(i)));
+        }
+
+        registry.processQueue();
+        assertEq(registry.getRecipientCount(), 50);
+
+        vm.stopPrank();
+    }
+}
