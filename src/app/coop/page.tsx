@@ -5,30 +5,19 @@ import Link from "next/link";
 import { useAccount } from "wagmi";
 import { isAddress, type Address } from "viem";
 import { Body, Button, Caption, Chip, Heading4 } from "@breadcoop/ui";
-import {
-  ArrowRight,
-  ArrowsClockwise,
-  CheckCircle,
-  Circle,
-  SpinnerGap,
-} from "@phosphor-icons/react";
+import { ArrowRight, ArrowsClockwise, SpinnerGap } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { shortenAddress } from "@/lib/format";
 import {
   COOP,
-  FUNDS,
-  FUND_KEYS,
   coopAddressUrl,
   coopDmAbi,
   coopPowerAbi,
   coopRegistryAbi,
   coopTxUrl,
   coopVotingAbi,
-  coopWithdrawalsAbi,
   toCoopWei,
   type CoopState,
-  type CoopWithdrawal,
-  type FundKey,
 } from "@/lib/coop";
 import { useCoopState, useCoopTx } from "@/hooks/use-coop";
 import { AsteriskMark, OurCoopLogo } from "@/components/ourcoop-logo";
@@ -38,7 +27,6 @@ import { WalletButton } from "@/components/dapp/wallet-button";
 const VIEWS = [
   ["overview", "Overview"],
   ["vote", "Vote"],
-  ["withdrawals", "Withdrawals"],
   ["members", "Members"],
 ] as const;
 type ViewId = (typeof VIEWS)[number][0];
@@ -84,7 +72,6 @@ export default function CoopPage() {
               <OverviewView state={data} setView={setView} />
             )}
             {view === "vote" && <VoteView state={data} />}
-            {view === "withdrawals" && <WithdrawalsView state={data} />}
             {view === "members" && <MembersView state={data} />}
             <div className="mt-10 flex items-center justify-between">
               <Caption className="text-surface-grey">
@@ -165,10 +152,10 @@ function MembershipBanner({ state }: { state?: CoopState }) {
     return (
       <Card className="border-core-orange/30 bg-core-orange/5 mt-6">
         <Body className="text-surface-grey-2 text-sm">
-          You&apos;re browsing the Democratic Tech Fund&apos;s funding circle.
-          This is an illustrative preview — the figures are sample data. Browse
-          the treasuries, ballots, and activity freely; in a live deployment,
-          members connect a wallet to act. One member, one vote.
+          You&apos;re browsing the Democratic Tech Fund&apos;s pool. This is an
+          illustrative preview — the figures are sample data. Browse the
+          projects, ballots, and activity freely; in a live deployment, members
+          connect a wallet to act. One member, one vote.
         </Body>
       </Card>
     );
@@ -237,65 +224,6 @@ function CycleBanner({ state }: { state: CoopState }) {
   );
 }
 
-function FundsCard({ state }: { state: CoopState }) {
-  const total = FUND_KEYS.reduce((a, k) => a + state.funds[k], 0);
-  return (
-    <Card>
-      <Heading4 className="text-text-standard">The Fund&apos;s treasuries</Heading4>
-      <Caption className="text-surface-grey-2 mt-1 block">
-        Total <strong>{usd(total)}</strong> across all treasuries · the Funding
-        Pool is the yield-fed project pool
-      </Caption>
-      <div className="mt-4 space-y-3">
-        {FUND_KEYS.map((k) => {
-          const pct = total
-            ? Math.max(2, Math.round((state.funds[k] / total) * 100))
-            : 0;
-          return (
-            <div key={k}>
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="h-3 w-3 rounded-sm"
-                  style={{ background: FUNDS[k].color }}
-                />
-                <Caption className="text-text-standard flex-1 font-medium">
-                  {FUNDS[k].label}
-                </Caption>
-                <Caption className="text-text-standard font-bold">
-                  {usd(state.funds[k])}
-                </Caption>
-              </div>
-              <div className="bg-paper-2 mt-1 h-2 overflow-hidden rounded-full">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${pct}%`, background: FUNDS[k].color }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function FundBadge({ fund }: { fund: string }) {
-  const meta = FUNDS[fund as FundKey];
-  const color = meta?.color ?? "#837d91";
-  return (
-    <span
-      className="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold"
-      style={{
-        color,
-        borderColor: `${color}55`,
-        background: `${color}14`,
-      }}
-    >
-      {meta?.label ?? fund}
-    </span>
-  );
-}
-
 function TxLine({
   status,
   hash,
@@ -348,59 +276,46 @@ function OverviewView({
   setView: (v: ViewId) => void;
 }) {
   const fundedLastRound = state.projects.filter((p) => p.funded > 0).length;
-  const openVotes = state.withdrawals.filter(
-    (w) => w.status === "voting",
-  ).length;
   return (
     <div>
       <div className="mt-6">
         <PageHeader
-          title="Democratic Tech Fund — governance"
-          subtitle="One shared pool, funded by yield and allocated by members. Contribute, vote on community-tech projects, and govern the treasuries — one member, one vote."
+          title="Democratic Tech Fund"
+          subtitle="One shared pool, funded by yield. Members vote to split it across the projects in the fund — one member, one vote. Nobody spends their principal."
         />
       </div>
       <CycleBanner state={state} />
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Projects" value={state.projects.length} />
+        <StatCard label="Projects in the fund" value={state.projects.length} />
         <StatCard label="Funded (last round)" value={fundedLastRound} />
-        <StatCard label="Open withdrawal votes" value={openVotes} />
+        <StatCard label="Funding pool" value={usd(state.funds.artFund)} accent />
         <StatCard label="Members" value={state.memberCount} />
       </div>
 
-      <SectionTitle>Treasuries</SectionTitle>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <FundsCard state={state} />
-        <Card>
-          <Heading4 className="text-text-standard">How the money moves</Heading4>
-          <Body className="text-surface-grey-2 mt-2 text-sm">
-            Members contribute into a shared vault; the principal stays theirs,
-            redeemable 1:1 anytime. The yield it earns accrues to the Funding
-            Pool, and each cycle members&apos; ballots decide which
-            community-tech projects it funds. The four treasuries are drawn down
-            by member withdrawal votes.
-          </Body>
-          <dl className="mt-4 space-y-2">
-            <KvRow k="Unit of account" v="cUSD (1 cUSD = $1)" />
-            <KvRow k="Funding cycle" v={`#${state.cycle}`} />
-            <KvRow k="Governance" v="One member, one vote" />
-            <KvRow k="Your principal" v="Redeemable 1:1, anytime" />
-          </dl>
-        </Card>
-      </div>
+      <SectionTitle>How it works</SectionTitle>
+      <Card>
+        <Heading4 className="text-text-standard">How the money moves</Heading4>
+        <Body className="text-surface-grey-2 mt-2 text-sm">
+          Members contribute into a shared vault; the principal stays theirs,
+          redeemable 1:1 anytime. Only the yield it earns is ever spent — each
+          cycle, members&apos; 100-point ballots decide how that pool is split
+          across the projects in the fund.
+        </Body>
+        <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+          <KvRow k="Unit of account" v="cUSD (1 cUSD = $1)" />
+          <KvRow k="Funding cycle" v={`#${state.cycle}`} />
+          <KvRow k="Governance" v="One member, one vote" />
+          <KvRow k="Your principal" v="Redeemable 1:1, anytime" />
+        </dl>
+      </Card>
 
       <SectionTitle>Take part</SectionTitle>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <QuickAction
           title="Vote on projects"
-          body="Distribute your 100 points across the community-tech projects — the pool follows the ratio."
+          body="Distribute your 100 points across the projects in the fund — the pool follows the ratio."
           cta="Open voting"
           onClick={() => setView("vote")}
-        />
-        <QuickAction
-          title="Govern the treasuries"
-          body="Propose and vote on draws from the Fund's four treasuries."
-          cta="Open withdrawals"
-          onClick={() => setView("withdrawals")}
         />
         <ContributeCard state={state} />
       </div>
@@ -748,285 +663,6 @@ function VoteBallot({ state }: { state: CoopState }) {
         hash={round.hash}
         error={round.error}
         successLabel="Funding round distributed — cycle advanced."
-      />
-    </Card>
-  );
-}
-
-/* ------------------------------- Withdrawals ------------------------------ */
-
-function WithdrawalsView({ state }: { state: CoopState }) {
-  return (
-    <div>
-      <div className="mt-6">
-        <PageHeader
-          title="Fund withdrawals"
-          subtitle="Propose drawing from one of the four funds and vote. One member, one vote — a majority of cast votes approves."
-        />
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <FundsCard state={state} />
-        <ProposeWithdrawalCard state={state} />
-      </div>
-      <SectionTitle>Proposals</SectionTitle>
-      {state.withdrawals.length === 0 ? (
-        <EmptyState>No proposals yet.</EmptyState>
-      ) : (
-        <div className="space-y-4">
-          {state.withdrawals
-            .slice()
-            .reverse()
-            .map((w) => (
-              <WithdrawalCard key={w.id} w={w} state={state} />
-            ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProposeWithdrawalCard({ state }: { state: CoopState }) {
-  const [fund, setFund] = useState(1);
-  const [amount, setAmount] = useState("300");
-  const [recipient, setRecipient] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const tx = useCoopTx();
-  const { isConnected } = useAccount();
-
-  const amountNum = Number(amount || 0);
-  const valid =
-    amountNum > 0 && isAddress(recipient.trim()) && purpose.trim().length > 0;
-  const gated = !isConnected || !state.isMember;
-
-  return (
-    <Card>
-      <Heading4 className="text-text-standard">Propose a withdrawal</Heading4>
-      <div className="mt-4 space-y-3">
-        <label className="block">
-          <Caption className="text-surface-grey-2 mb-1 block">
-            Source fund
-          </Caption>
-          <select
-            value={fund}
-            onChange={(e) => setFund(Number(e.target.value))}
-            className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
-          >
-            {FUND_KEYS.slice(0, 4).map((k, i) => (
-              <option key={k} value={i}>
-                {FUNDS[k].label} — {usd(state.funds[k])}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <Caption className="text-surface-grey-2 mb-1 block">
-            Amount (cUSD)
-          </Caption>
-          <input
-            type="number"
-            min={0}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="block">
-          <Caption className="text-surface-grey-2 mb-1 block">
-            Recipient (0x address)
-          </Caption>
-          <input
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="0x…"
-            className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 font-mono text-sm outline-none"
-          />
-        </label>
-        <label className="block">
-          <Caption className="text-surface-grey-2 mb-1 block">Purpose</Caption>
-          <textarea
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            rows={2}
-            placeholder="What the funds will be used for"
-            className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
-          />
-        </label>
-      </div>
-      <div className="mt-4">
-        <Button
-          app="fund"
-          variant="primary"
-          size="sm"
-          disabled={gated || !valid || tx.isBusy}
-          onClick={() =>
-            void tx.run({
-              address: COOP.withdrawals,
-              abi: coopWithdrawalsAbi,
-              functionName: "proposeWithdrawal",
-              args: [
-                fund,
-                toCoopWei(amountNum),
-                recipient.trim() as Address,
-                purpose.trim(),
-              ],
-            })
-          }
-        >
-          {tx.isBusy ? "Proposing…" : "Propose withdrawal"}
-        </Button>
-        {gated && (
-          <Caption className="text-surface-grey mt-2 block">
-            {!isConnected
-              ? "Connect a member wallet to propose."
-              : "Your wallet isn't a member — ask the coordinator."}
-          </Caption>
-        )}
-        <TxLine
-          status={tx.status}
-          hash={tx.hash}
-          error={tx.error}
-          successLabel="Withdrawal proposed."
-        />
-      </div>
-    </Card>
-  );
-}
-
-function WithdrawalCard({ w, state }: { w: CoopWithdrawal; state: CoopState }) {
-  const voteTx = useCoopTx();
-  const closeTx = useCoopTx();
-  const { isConnected } = useAccount();
-  const cast = w.votesFor + w.votesAgainst;
-  const pctFor = cast ? Math.round((w.votesFor / cast) * 100) : 0;
-  const gated =
-    !isConnected || !state.isMember || w.iVoted || w.status !== "voting";
-
-  return (
-    <Card>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Heading4 className="text-text-standard">
-            {usd(w.amount)} from <FundBadge fund={w.fund} />
-          </Heading4>
-          <Caption className="text-surface-grey mt-1 block">
-            By{" "}
-            {state.memberNames[w.proposer.toLowerCase()] ??
-              shortenAddress(w.proposer)}{" "}
-            · to{" "}
-            <a
-              href={coopAddressUrl(w.recipient)}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-core-orange font-mono"
-            >
-              {shortenAddress(w.recipient)}
-            </a>
-          </Caption>
-        </div>
-        <Chip
-          size="small"
-          className={
-            w.status === "voting"
-              ? "text-system-warning"
-              : w.status === "approved"
-                ? "text-system-green"
-                : "text-system-red"
-          }
-        >
-          {w.status}
-        </Chip>
-      </div>
-      <Body className="text-surface-grey-2 mt-3 text-sm">{w.purpose}</Body>
-      <div className="border-paper-2 mt-3 flex h-3 overflow-hidden rounded-full border">
-        {cast === 0 ? (
-          <div className="bg-paper-2 w-full" />
-        ) : (
-          <>
-            <div
-              className="bg-system-green h-full"
-              style={{ width: `${pctFor}%` }}
-            />
-            <div
-              className="bg-system-red h-full"
-              style={{ width: `${100 - pctFor}%` }}
-            />
-          </>
-        )}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <Caption className="text-surface-grey-2">
-          For <strong className="text-text-standard">{w.votesFor}</strong> ·
-          Against{" "}
-          <strong className="text-text-standard">{w.votesAgainst}</strong> · of{" "}
-          {state.memberCount} members
-          {w.iVoted && " · you voted"}
-        </Caption>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            app="fund"
-            variant="secondary"
-            size="sm"
-            disabled={gated || voteTx.isBusy}
-            leftIcon={<CheckCircle weight="bold" />}
-            onClick={() =>
-              void voteTx.run({
-                address: COOP.withdrawals,
-                abi: coopWithdrawalsAbi,
-                functionName: "voteWithdrawal",
-                args: [BigInt(w.id), true],
-              })
-            }
-          >
-            For
-          </Button>
-          <Button
-            app="fund"
-            variant="secondary"
-            size="sm"
-            disabled={gated || voteTx.isBusy}
-            leftIcon={<Circle weight="bold" />}
-            onClick={() =>
-              void voteTx.run({
-                address: COOP.withdrawals,
-                abi: coopWithdrawalsAbi,
-                functionName: "voteWithdrawal",
-                args: [BigInt(w.id), false],
-              })
-            }
-          >
-            Against
-          </Button>
-          {w.status === "voting" && (
-            <Button
-              app="fund"
-              variant="secondary"
-              size="sm"
-              disabled={!isConnected || !state.isMember || closeTx.isBusy}
-              onClick={() =>
-                void closeTx.run({
-                  address: COOP.withdrawals,
-                  abi: coopWithdrawalsAbi,
-                  functionName: "closeWithdrawal",
-                  args: [BigInt(w.id)],
-                })
-              }
-            >
-              Close & tally
-            </Button>
-          )}
-        </div>
-      </div>
-      <TxLine
-        status={voteTx.status}
-        hash={voteTx.hash}
-        error={voteTx.error}
-        successLabel="Vote recorded."
-      />
-      <TxLine
-        status={closeTx.status}
-        hash={closeTx.hash}
-        error={closeTx.error}
-        successLabel="Withdrawal closed."
       />
     </Card>
   );

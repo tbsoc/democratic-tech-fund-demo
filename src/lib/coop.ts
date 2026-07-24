@@ -701,65 +701,84 @@ const DEMO_MEMBER_NAMES = [
   "Yuki Tanaka",
 ] as const;
 
+/**
+ * The projects in the fund — real Democratic Tech Fund partner initiatives.
+ * Members distribute their points across these; the yield follows the ratio.
+ * Points sum to 100 across the slate.
+ */
 const DEMO_PROJECTS: CoopProject[] = [
   {
     idx: 0,
     addr: "0x1A2b3C4d5E6f708192A3b4C5d6E7f80912345678",
-    title: "Kolektiv Cloud",
-    summary: "Member-run Nextcloud + collaboration suite for 40 local orgs.",
+    title: "Newsmast",
+    summary:
+      "Community-first social media on open protocols, so groups can leave Big Tech platforms behind.",
     full: 8000,
     minViable: 3500,
-    points: 30,
-    funded: 0,
+    points: 24,
+    funded: 2000,
   },
   {
     idx: 1,
     addr: "0x2B3c4D5e6F708192a3B4c5D6e7F8091234567890",
-    title: "Foodsoft Rotterdam",
+    title: "Foodsoft · Biobulkbende",
     summary:
-      "Self-hosted food-coop ordering for 120 households, kept alive on a server in a closet.",
-    full: 5000,
-    minViable: 2000,
-    points: 22,
-    funded: 1500,
+      "Self-hosted ordering that keeps a 60-member Rotterdam food co-op running on its own server.",
+    full: 4000,
+    minViable: 1500,
+    points: 20,
+    funded: 1200,
   },
   {
     idx: 2,
     addr: "0x3C4d5E6f708192A3b4C5d6E7f8091234567890Ab",
-    title: "Leave-Big-Tech Clinics",
-    summary: "Peer-training clinics to move communities off Big Tech platforms.",
-    full: 4000,
-    minViable: 1500,
-    points: 20,
+    title: "KolliCloud",
+    summary:
+      "A sovereign community cloud on the Co-op Cloud Federation, owned and shared by small communities.",
+    full: 6000,
+    minViable: 2500,
+    points: 18,
     funded: 0,
   },
   {
     idx: 3,
     addr: "0x4D5e6F708192a3B4c5D6e7F8091234567890aBcD",
-    title: "Community Mesh Kits",
-    summary: "Neighbourhood mesh-networking hardware kits with plain-language docs.",
-    full: 6000,
-    minViable: 2500,
+    title: "Goteo",
+    summary:
+      "Commons crowdfunding platform — €25M to thousands of solidarity-economy campaigns over 15 years.",
+    full: 5000,
+    minViable: 2000,
     points: 16,
     funded: 0,
   },
   {
     idx: 4,
     addr: "0x5E6f708192A3b4C5d6E7f8091234567890AbCdEf",
-    title: "Co-op Cloud Onboarding",
-    summary: "Federated hosting infrastructure + docs so new co-ops can self-host.",
+    title: "LaSuite.coop",
+    summary:
+      "A cooperative workspace suite turning state-funded tools into an open-source commons communities co-own.",
+    full: 4500,
+    minViable: 1800,
+    points: 12,
+    funded: 0,
+  },
+  {
+    idx: 5,
+    addr: "0x6a708192A3b4C5d6E7f8091234567890AbCdEf12",
+    title: "Co-op Cloud",
+    summary:
+      "Federated self-hosting infrastructure so co-ops can run their own digital tools.",
     full: 3000,
     minViable: 1200,
-    points: 12,
+    points: 10,
     funded: 900,
   },
 ];
 
 /**
- * A self-contained snapshot of a Democratic Tech Fund funding circle mid-cycle:
- * five community-tech proposals on the ballot, treasuries, live withdrawal
- * votes, a member roster, and an activity feed. Deterministic — no chain, no
- * wallet, no clock.
+ * A self-contained snapshot of the Democratic Tech Fund mid-cycle: one shared
+ * pool, six partner projects on the ballot, a member roster, and an activity
+ * feed. Deterministic — no chain, no wallet, no clock.
  */
 function demoCoopState(account?: Address): CoopState {
   const members = DEMO_MEMBERS.map((m) => m.toLowerCase() as Address);
@@ -769,59 +788,24 @@ function demoCoopState(account?: Address): CoopState {
   );
   const nameOf = (m: Address) => memberNames[m] ?? shortAddr(m);
 
+  // One shared pool (the fund's accrued yield). The legacy treasury keys are
+  // zeroed — this model funds projects directly, Bread-Coop style.
   const funds: Record<FundKey, number> = {
-    reserve: 12500,
-    education: 4200,
-    solidarity: 3100,
-    production: 6800,
+    reserve: 0,
+    education: 0,
+    solidarity: 0,
+    production: 0,
     artFund: 5400,
   };
 
-  const withdrawals: CoopWithdrawal[] = [
-    {
-      id: 0,
-      proposer: members[3],
-      fund: "production",
-      amount: 2400,
-      recipient: DEMO_PROJECTS[0].addr,
-      purpose:
-        "Annual Gnosis RPC + off-site backups for the community clouds.",
-      status: "voting",
-      votesFor: 7,
-      votesAgainst: 1,
-      iVoted: false,
-    },
-    {
-      id: 1,
-      proposer: members[1],
-      fund: "education",
-      amount: 1500,
-      recipient: DEMO_PROJECTS[2].addr,
-      purpose: "Translate the self-hosting handbook into five languages.",
-      status: "approved",
-      votesFor: 10,
-      votesAgainst: 2,
-      iVoted: false,
-    },
-    {
-      id: 2,
-      proposer: members[5],
-      fund: "solidarity",
-      amount: 900,
-      recipient: DEMO_PROJECTS[1].addr,
-      purpose: "Emergency hosting for a deplatformed mutual-aid group.",
-      status: "voting",
-      votesFor: 5,
-      votesAgainst: 0,
-      iVoted: false,
-    },
-  ];
+  const withdrawals: CoopWithdrawal[] = [];
 
   const queuedProjects: CoopQueuedProject[] = [
     {
-      addr: "0x6F708192a3B4c5D6e7F8091234567890AbCdEf01",
-      title: "Encrypted Backups Circle",
-      summary: "Off-site encrypted backups pooled across member organisations.",
+      addr: "0x7B818293A4b5C6d7E8f9012345678901AbCdEf23",
+      title: "Meet.coop",
+      summary:
+        "Co-op-run video conferencing (BigBlueButton) so communities don't meet on Big Tech.",
       full: 3500,
       minViable: 1500,
     },
@@ -832,9 +816,17 @@ function demoCoopState(account?: Address): CoopState {
       when: "2026-07-21 09:12",
       from: "artFund",
       to: "recipient",
-      amount: 1500,
+      amount: 2000,
       kind: "project_funding",
-      note: "Foodsoft Rotterdam",
+      note: "Newsmast",
+    },
+    {
+      when: "2026-07-21 09:12",
+      from: "artFund",
+      to: "recipient",
+      amount: 1200,
+      kind: "project_funding",
+      note: "Foodsoft · Biobulkbende",
     },
     {
       when: "2026-07-21 09:12",
@@ -842,23 +834,15 @@ function demoCoopState(account?: Address): CoopState {
       to: "recipient",
       amount: 900,
       kind: "project_funding",
-      note: "Co-op Cloud Onboarding",
-    },
-    {
-      when: "2026-07-14 18:03",
-      from: "education",
-      to: "recipient",
-      amount: 1500,
-      kind: "withdrawal",
-      note: "Handbook translations",
+      note: "Co-op Cloud",
     },
     {
       when: "2026-07-01 12:00",
       from: "members",
-      to: "reserve",
+      to: "pool",
       amount: 5000,
       kind: "contribution",
-      note: "New backer contributions (batch)",
+      note: "New member contributions (batch)",
     },
   ];
 
@@ -867,13 +851,13 @@ function demoCoopState(account?: Address): CoopState {
       when: "2026-07-21 09:12",
       actor: "strategy",
       kind: "funded",
-      text: "Funded Foodsoft Rotterdam with $1,500",
+      text: "Funded Newsmast with $2,000",
     },
     {
       when: "2026-07-21 09:12",
       actor: "manager",
       kind: "round",
-      text: "Round #6 distributed $2,400 of $5,400 pool",
+      text: "Round #6 distributed $4,100 of $5,400 pool across 3 projects",
     },
     {
       when: "2026-07-18 20:41",
@@ -883,15 +867,15 @@ function demoCoopState(account?: Address): CoopState {
     },
     {
       when: "2026-07-16 11:05",
-      actor: nameOf(members[3]),
-      kind: "withdrawal_proposed",
-      text: "Proposed $2,400 from Infrastructure — Annual Gnosis RPC + backups",
+      actor: nameOf(coordinator),
+      kind: "proposal",
+      text: 'Registered "Meet.coop" (full $3,500, min $1,500)',
     },
     {
-      when: "2026-07-14 18:03",
-      actor: "system",
-      kind: "withdrawal_closed",
-      text: "Withdrawal #1 approved",
+      when: "2026-07-12 14:20",
+      actor: nameOf(members[4]),
+      kind: "vote",
+      text: "Cast 100-point ballot in cycle 7",
     },
     {
       when: "2026-07-10 08:30",
