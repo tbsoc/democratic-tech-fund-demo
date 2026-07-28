@@ -782,7 +782,7 @@ const DEMO_PROJECTS: CoopProject[] = [
  * pool, six partner projects on the ballot, a member roster, and an activity
  * feed. Deterministic — no chain, no wallet, no clock.
  */
-function demoCoopState(account?: Address): CoopState {
+async function demoCoopState(account?: Address): Promise<CoopState> {
   const members = DEMO_MEMBERS.map((m) => m.toLowerCase() as Address);
   const coordinator = members[0];
   const memberNames: Record<string, string> = Object.fromEntries(
@@ -891,6 +891,43 @@ function demoCoopState(account?: Address): CoopState {
     ? members.includes(account.toLowerCase() as Address)
     : false;
 
+  // Personal balances are read live from the connected wallet even in demo
+  // mode: the faucet / deposit / redeem actions submit real transactions, so a
+  // connected wallet sees its actual EURe (myUsd) and DTF-EUR (myCusd) update.
+  // The fund-level figures (pool, projects, members) stay demo data.
+  let myCusd = 0;
+  let myUsd = 0;
+  let usdAllowance = 0;
+  if (account) {
+    try {
+      const [cusdRaw, usdRaw, allowRaw] = await Promise.all([
+        coopClient.readContract({
+          address: COOP.token,
+          abi: coopTokenAbi,
+          functionName: "balanceOf",
+          args: [account],
+        }),
+        coopClient.readContract({
+          address: COOP.usd,
+          abi: coopUsdAbi,
+          functionName: "balanceOf",
+          args: [account],
+        }),
+        coopClient.readContract({
+          address: COOP.usd,
+          abi: coopUsdAbi,
+          functionName: "allowance",
+          args: [account, COOP.token],
+        }),
+      ]);
+      myCusd = toUsd(cusdRaw);
+      myUsd = toUsd(usdRaw);
+      usdAllowance = toUsd(allowRaw);
+    } catch {
+      // Network hiccup — fall back to zeros; browsing stays live.
+    }
+  }
+
   return {
     funds,
     projects: DEMO_PROJECTS,
@@ -906,9 +943,9 @@ function demoCoopState(account?: Address): CoopState {
     members,
     memberNames,
     artYield: 1850,
-    myCusd: 0,
-    myUsd: 0,
-    usdAllowance: 0,
+    myCusd,
+    myUsd,
+    usdAllowance,
     movements,
     log,
   };
