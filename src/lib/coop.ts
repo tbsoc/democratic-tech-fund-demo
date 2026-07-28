@@ -52,6 +52,7 @@ export const coopUsdAbi = parseAbi([
   "function allowance(address owner, address spender) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
   "function mint(address to, uint256 amount)",
+  "function transfer(address to, uint256 amount) returns (bool)",
 ]);
 export const coopPowerAbi = parseAbi([
   "function isMember(address) view returns (bool)",

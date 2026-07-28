@@ -344,7 +344,6 @@ function ContributeView({ state }: { state: CoopState }) {
 
   const amt = Number(amount || 0);
   const needsApproval = amt > 0 && state.usdAllowance < amt;
-  const recipient = mode === "donate" ? COOP.distributionManager : address;
 
   return (
     <div>
@@ -416,7 +415,9 @@ function ContributeView({ state }: { state: CoopState }) {
           </label>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {needsApproval ? (
+            {/* Deposit mints DTF-EUR (pulls EURe → needs approval first);
+                donating just transfers EURe to the pool → no approval. */}
+            {mode === "deposit" && needsApproval ? (
               <Button
                 app="fund"
                 variant="secondary"
@@ -445,12 +446,21 @@ function ContributeView({ state }: { state: CoopState }) {
                   contribute.isBusy
                 }
                 onClick={() =>
-                  void contribute.run({
-                    address: COOP.token,
-                    abi: coopTokenAbi,
-                    functionName: "mint",
-                    args: [recipient, toCoopWei(amt)],
-                  })
+                  void contribute.run(
+                    mode === "deposit"
+                      ? {
+                          address: COOP.token,
+                          abi: coopTokenAbi,
+                          functionName: "mint",
+                          args: [address, toCoopWei(amt)],
+                        }
+                      : {
+                          address: COOP.usd,
+                          abi: coopUsdAbi,
+                          functionName: "transfer",
+                          args: [COOP.distributionManager, toCoopWei(amt)],
+                        },
+                  )
                 }
               >
                 {contribute.isBusy
@@ -785,8 +795,7 @@ function VoteBallot({ state }: { state: CoopState }) {
                   {p.title}
                 </span>
                 <span className="text-surface-grey block text-xs">
-                  full {eur(p.full)} · min {eur(p.minViable)} · now {p.points}{" "}
-                  pts community-wide
+                  {p.summary}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -871,7 +880,7 @@ function VoteBallot({ state }: { state: CoopState }) {
               })
             }
           >
-            {round.isBusy ? "Running…" : "Run funding round"}
+            {round.isBusy ? "Distributing…" : "Distribute"}
           </Button>
         </div>
       </div>
@@ -896,7 +905,7 @@ function VoteBallot({ state }: { state: CoopState }) {
         status={round.status}
         hash={round.hash}
         error={round.error}
-        successLabel="Funding round distributed — cycle advanced."
+        successLabel="Yield distributed to projects — cycle advanced."
       />
     </Card>
   );
@@ -937,39 +946,30 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [full, setFull] = useState("1000");
-  const [minViable, setMinViable] = useState("400");
   const tx = useCoopTx();
 
-  const fullNum = Number(full || 0);
-  const minNum = Number(minViable || 0);
-  const valid =
-    title.trim().length > 0 &&
-    isAddress(recipient.trim()) &&
-    fullNum > 0 &&
-    minNum > 0 &&
-    minNum <= fullNum;
+  const valid = title.trim().length > 0 && isAddress(recipient.trim());
 
   return (
     <Card>
       <Heading4 className="text-text-standard">Register a project</Heading4>
       <Body className="text-surface-grey-2 mt-1 text-sm">
-        The coordinator registers proposals with a full budget and a
-        minimum-viable floor. New projects queue, then activate at the cycle
+        The coordinator adds a project with a name, a one-line description, and
+        a payout address. New projects queue, then join the ballot at the cycle
         boundary.
       </Body>
       <div className="mt-4 space-y-3">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Project title"
+          placeholder="Project name"
           className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
         />
         <textarea
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
           rows={2}
-          placeholder="What the project is, who it benefits"
+          placeholder="One sentence: what the project is and who it benefits"
           className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
         />
         <input
@@ -978,32 +978,6 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
           placeholder="Payout address 0x…"
           className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 font-mono text-sm outline-none"
         />
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <Caption className="text-surface-grey-2 mb-1 block">
-              Full budget ({TOKEN})
-            </Caption>
-            <input
-              type="number"
-              min={0}
-              value={full}
-              onChange={(e) => setFull(e.target.value)}
-              className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
-            />
-          </label>
-          <label className="block">
-            <Caption className="text-surface-grey-2 mb-1 block">
-              Min viable ({TOKEN})
-            </Caption>
-            <input
-              type="number"
-              min={0}
-              value={minViable}
-              onChange={(e) => setMinViable(e.target.value)}
-              className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
-            />
-          </label>
-        </div>
       </div>
       <Button
         app="fund"
@@ -1018,8 +992,8 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
             functionName: "registerProject",
             args: [
               recipient.trim() as Address,
-              toCoopWei(fullNum),
-              toCoopWei(minNum),
+              0n,
+              0n,
               title.trim(),
               summary.trim(),
             ],
@@ -1032,11 +1006,6 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
         <Caption className="text-surface-grey mt-2 block">
           Only the coordinator ({shortenAddress(state.coordinator)}) can
           register projects on-chain.
-        </Caption>
-      )}
-      {minNum > fullNum && (
-        <Caption className="text-system-red mt-2 block">
-          The minimum-viable floor can&apos;t exceed the full budget.
         </Caption>
       )}
       <TxLine
@@ -1071,8 +1040,7 @@ function QueuedProjectsCard({ state }: { state: CoopState }) {
                 {q.title}
               </span>
               <span className="text-surface-grey block text-xs">
-                {shortenAddress(q.addr)} · full {eur(q.full)} · min{" "}
-                {eur(q.minViable)}
+                {q.summary}
               </span>
             </div>
           ))}
