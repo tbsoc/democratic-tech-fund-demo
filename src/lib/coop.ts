@@ -672,6 +672,7 @@ async function fetchActivity(projects: CoopProject[]): Promise<{
 /** Plausible member addresses for the demo roster (coordinator is first). */
 const DEMO_MEMBERS = [
   "0x71C2f4a9B0E3a6D5c8149Bb7A0e6F2135e8Bd0a4",
+  "0x8C1d2E3f4A5b6C7d8E9f0A1b2C3d4E5f60718293",
   "0x9fA3c21D7e58B44016cC9e2d3aF71b0c2E4d6c2a",
   "0x4c88E1b52aD9F3600C7bE1a9d84C2f0913Ae9eF2",
   "0x2Db6Ac5C9c10154B3A632c92b13584B3cC4011Dd",
@@ -688,6 +689,7 @@ const DEMO_MEMBERS = [
 /** Display names for the demo roster (index-aligned with DEMO_MEMBERS). */
 const DEMO_MEMBER_NAMES = [
   "Marta Ruiz",
+  "Wouter Tebbens",
   "Kwame Mensah",
   "Sofia Nowak",
   "Diego Fernández",

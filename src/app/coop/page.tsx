@@ -160,16 +160,6 @@ function MembershipBanner({ state }: { state?: CoopState }) {
       </Card>
     );
   }
-  if (!state.isMember) {
-    return (
-      <Card className="border-system-warning/40 bg-system-warning/5 mt-6">
-        <Body className="text-surface-grey-2 text-sm">
-          This wallet isn&apos;t a member of the Fund yet — ask the coordinator
-          to add it. You can browse everything in the meantime.
-        </Body>
-      </Card>
-    );
-  }
   return null;
 }
 
@@ -402,7 +392,7 @@ function VoteView({ state }: { state: CoopState }) {
       <div className="mt-6">
         <PageHeader
           title="Vote"
-          subtitle="Distribute your 100 points across the community-tech projects to influence how much of the Funding Pool each receives. The pool follows the ratio of all members' points."
+          subtitle="Set how your voting power is split across the projects. The points are just weights — they form a ratio, and your voting power is applied in those proportions. The pool follows the combined ratio of everyone's ballots."
         />
       </div>
       <CycleBanner state={state} />
@@ -493,11 +483,13 @@ function VoteBallot({ state }: { state: CoopState }) {
     setPoints(new Array(state.projects.length).fill(0));
   }
 
+  // Points are relative weights, not a fixed budget — no cap. Each project's
+  // share is its weight / the total, and that ratio is applied to the voter's
+  // voting power.
   const setPoint = (i: number, raw: number) => {
     setPoints((prev) => {
       const next = [...prev];
-      const others = prev.reduce((a, b, j) => (j === i ? a : a + b), 0);
-      next[i] = Math.max(0, Math.min(Math.round(raw), 100 - others));
+      next[i] = Math.max(0, Math.round(raw));
       return next;
     });
   };
@@ -506,17 +498,12 @@ function VoteBallot({ state }: { state: CoopState }) {
   const bump = (i: number, delta: number) => {
     setPoints((prev) => {
       const next = [...prev];
-      const others = prev.reduce((a, b, j) => (j === i ? a : a + b), 0);
-      next[i] = Math.max(0, Math.min((prev[i] ?? 0) + delta, 100 - others));
+      next[i] = Math.max(0, (prev[i] ?? 0) + delta);
       return next;
     });
   };
 
-  const disabledReason = !isConnected
-    ? "Connect a wallet to act"
-    : !state.isMember
-      ? "Your wallet isn't a member"
-      : null;
+  const disabledReason = !isConnected ? "Connect a wallet to act" : null;
 
   if (state.projects.length === 0)
     return <EmptyState>No projects registered.</EmptyState>;
@@ -527,13 +514,10 @@ function VoteBallot({ state }: { state: CoopState }) {
         <div>
           <Heading4 className="text-text-standard">Your ballot</Heading4>
           <Caption className="text-surface-grey-2 mt-0.5 block">
-            Spend 100 points however you like — each project&apos;s share of your
-            ballot is the ratio it gets. One member, one ballot.
+            Give each project as many points as you like — they set the ratio,
+            and your voting power is split in the shares shown. Recasting
+            replaces your previous ballot.
           </Caption>
-        </div>
-        <div className="text-right">
-          <Caption className="text-surface-grey block">Points left</Caption>
-          <Heading4 className="text-text-standard">{100 - total}</Heading4>
         </div>
       </div>
 
@@ -567,7 +551,6 @@ function VoteBallot({ state }: { state: CoopState }) {
                 <input
                   type="number"
                   min={0}
-                  max={100}
                   value={pts}
                   onChange={(e) => setPoint(i, Number(e.target.value || 0))}
                   className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-16 rounded-lg border px-2 py-1.5 text-center text-sm outline-none"
@@ -596,8 +579,9 @@ function VoteBallot({ state }: { state: CoopState }) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <Body className="text-surface-grey-2 text-sm">
-          Points used:{" "}
-          <span className="text-text-standard font-bold">{total}</span> / 100
+          {total > 0
+            ? "Shares are relative — they always add up to 100%."
+            : "Add points to set your split."}
         </Body>
         <div className="flex flex-wrap gap-2">
           <Button
