@@ -14,7 +14,9 @@ import {
   coopDmAbi,
   coopPowerAbi,
   coopRegistryAbi,
+  coopTokenAbi,
   coopTxUrl,
+  coopUsdAbi,
   coopVotingAbi,
   toCoopWei,
   type CoopState,
@@ -26,12 +28,17 @@ import { WalletButton } from "@/components/dapp/wallet-button";
 
 const VIEWS = [
   ["overview", "Overview"],
+  ["contribute", "Contribute"],
   ["vote", "Vote"],
   ["members", "Members"],
 ] as const;
 type ViewId = (typeof VIEWS)[number][0];
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+/** The fund's unit of account and the euro stablecoin members deposit. */
+const TOKEN = "DTF-EUR";
+const STABLE = "EURe";
+
+const eur = (n: number) => `€${Math.round(n).toLocaleString("en-US")}`;
 
 export default function CoopPage() {
   const [view, setView] = useState<ViewId>("overview");
@@ -71,6 +78,7 @@ export default function CoopPage() {
             {view === "overview" && (
               <OverviewView state={data} setView={setView} />
             )}
+            {view === "contribute" && <ContributeView state={data} />}
             {view === "vote" && <VoteView state={data} />}
             {view === "members" && <MembersView state={data} />}
             <div className="mt-10 flex items-center justify-between">
@@ -204,10 +212,10 @@ function CycleBanner({ state }: { state: CoopState }) {
       <div className="text-right">
         <Caption className="text-surface-grey block">Funding pool</Caption>
         <Heading4 className="text-text-standard">
-          {usd(state.funds.artFund)}
+          {eur(state.funds.artFund)}
         </Heading4>
         <Caption className="text-surface-grey block">
-          claimable yield {usd(state.artYield)}
+          {eur(state.artYield)} yield ready to distribute
         </Caption>
       </div>
     </Card>
@@ -278,7 +286,7 @@ function OverviewView({
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Projects in the fund" value={state.projects.length} />
         <StatCard label="Funded (last round)" value={fundedLastRound} />
-        <StatCard label="Funding pool" value={usd(state.funds.artFund)} accent />
+        <StatCard label="Funding pool" value={eur(state.funds.artFund)} accent />
         <StatCard label="Members" value={state.memberCount} />
       </div>
 
@@ -286,13 +294,13 @@ function OverviewView({
       <Card>
         <Heading4 className="text-text-standard">How the money moves</Heading4>
         <Body className="text-surface-grey-2 mt-2 text-sm">
-          Members contribute into a shared vault; the principal stays theirs,
-          redeemable 1:1 anytime. Only the yield it earns is ever spent — each
-          cycle, members&apos; 100-point ballots decide how that pool is split
-          across the projects in the fund.
+          Members contribute euro stablecoins into a shared vault and receive{" "}
+          {TOKEN} — their principal, redeemable 1:1 anytime. Only the yield the
+          vault earns is ever spent: it accrues to the pool, and each cycle a
+          funding round distributes it across the projects by member vote.
         </Body>
         <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-          <KvRow k="Unit of account" v="cUSD (1 cUSD = $1)" />
+          <KvRow k="Unit of account" v={`${TOKEN} (1 ${TOKEN} = €1)`} />
           <KvRow k="Funding cycle" v={`#${state.cycle}`} />
           <KvRow k="Governance" v="One member, one vote" />
           <KvRow k="Your principal" v="Redeemable 1:1, anytime" />
@@ -302,12 +310,17 @@ function OverviewView({
       <SectionTitle>Take part</SectionTitle>
       <div className="grid gap-4 md:grid-cols-2">
         <QuickAction
+          title="Contribute to the fund"
+          body="Deposit euro stablecoins for redeemable DTF-EUR, or make a one-time donation to the pool."
+          cta="Contribute"
+          onClick={() => setView("contribute")}
+        />
+        <QuickAction
           title="Vote on projects"
-          body="Distribute your 100 points across the projects in the fund — the pool follows the ratio."
+          body="Split your voting power across the projects in the fund — the pool follows the ratio."
           cta="Open voting"
           onClick={() => setView("vote")}
         />
-        <ContributeCard state={state} />
       </div>
 
       <SectionTitle>Recent activity</SectionTitle>
@@ -316,25 +329,262 @@ function OverviewView({
   );
 }
 
-function ContributeCard({ state }: { state: CoopState }) {
-  const { isConnected } = useAccount();
+/* ------------------------------- Contribute ------------------------------- */
+
+function ContributeView({ state }: { state: CoopState }) {
+  const { isConnected, address } = useAccount();
+  const [mode, setMode] = useState<"deposit" | "donate">("deposit");
+  const [amount, setAmount] = useState("100");
+  const [faucetAmt, setFaucetAmt] = useState("500");
+  const [redeemAmt, setRedeemAmt] = useState("");
+  const faucet = useCoopTx();
+  const approve = useCoopTx();
+  const contribute = useCoopTx();
+  const redeem = useCoopTx();
+
+  const amt = Number(amount || 0);
+  const needsApproval = amt > 0 && state.usdAllowance < amt;
+  const recipient = mode === "donate" ? COOP.distributionManager : address;
+
   return (
-    <Card className="flex flex-col">
-      <div className="flex items-center gap-2">
-        <AsteriskMark size={14} className="text-core-orange" />
-        <Heading4 className="text-text-standard">Contribute</Heading4>
+    <div>
+      <div className="mt-6">
+        <PageHeader
+          title="Contribute"
+          subtitle={`Two ways to back the fund. Deposit ${STABLE} (a euro stablecoin) 1:1 to mint ${TOKEN} — your principal, redeemable anytime, whose yield funds the work — or donate straight to the funding pool.`}
+        />
       </div>
-      <Body className="text-surface-grey-2 mt-2 flex-1 text-sm">
-        Deposit a stablecoin 1:1 to mint cUSD, the Fund&apos;s unit of account.
-        The pooled principal earns the yield — only the interest is spent, and
-        you can redeem 1:1 anytime.
-      </Body>
-      <Caption className="text-surface-grey mt-3 block">
-        {isConnected
-          ? `Your balance: ${usd(state.myCusd)} cUSD · redeemable 1:1`
-          : "Connect a wallet to contribute — this preview shows sample balances."}
-      </Caption>
-    </Card>
+
+      <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label={`Your ${TOKEN}`}
+          value={eur(state.myCusd)}
+          sub="redeemable 1:1"
+          accent
+        />
+        <StatCard label={`Your ${STABLE}`} value={eur(state.myUsd)} />
+        <StatCard label="Funding pool" value={eur(state.funds.artFund)} />
+        <StatCard label="Yield ready" value={eur(state.artYield)} />
+      </div>
+
+      {!isConnected && (
+        <Card className="mt-4">
+          <Body className="text-surface-grey-2 text-sm">
+            Connect a wallet to contribute — the balances above fill in once
+            connected. This preview uses sample figures.
+          </Body>
+        </Card>
+      )}
+
+      <SectionTitle>Make a contribution</SectionTitle>
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <div className="border-paper-2 bg-paper-main inline-flex rounded-xl border p-1">
+            {(["deposit", "donate"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={cn(
+                  "rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors",
+                  mode === m
+                    ? "bg-core-orange text-paper-main"
+                    : "text-surface-grey-2 hover:text-text-standard",
+                )}
+              >
+                {m === "deposit" ? "Deposit" : "Donate"}
+              </button>
+            ))}
+          </div>
+          <Body className="text-surface-grey-2 mt-3 text-sm">
+            {mode === "deposit"
+              ? `Deposit ${STABLE} 1:1 and receive ${TOKEN}. It joins the shared vault and earns yield; redeem your ${TOKEN} 1:1 whenever you like — your principal is never spent.`
+              : `Give ${STABLE} straight to this cycle's funding pool. Nothing is minted to you and there's nothing to redeem — 100% goes to the projects.`}
+          </Body>
+
+          <label className="mt-4 block">
+            <Caption className="text-surface-grey-2 mb-1 block">
+              Amount ({STABLE})
+            </Caption>
+            <input
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-full rounded-xl border px-3 py-2 text-sm outline-none"
+            />
+          </label>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {needsApproval ? (
+              <Button
+                app="fund"
+                variant="secondary"
+                size="sm"
+                disabled={!isConnected || amt <= 0 || approve.isBusy}
+                onClick={() =>
+                  void approve.run({
+                    address: COOP.usd,
+                    abi: coopUsdAbi,
+                    functionName: "approve",
+                    args: [COOP.token, toCoopWei(amt)],
+                  })
+                }
+              >
+                {approve.isBusy ? "Approving…" : `Approve ${STABLE}`}
+              </Button>
+            ) : (
+              <Button
+                app="fund"
+                variant="primary"
+                size="sm"
+                disabled={
+                  !isConnected ||
+                  amt <= 0 ||
+                  amt > state.myUsd ||
+                  contribute.isBusy
+                }
+                onClick={() =>
+                  void contribute.run({
+                    address: COOP.token,
+                    abi: coopTokenAbi,
+                    functionName: "mint",
+                    args: [recipient, toCoopWei(amt)],
+                  })
+                }
+              >
+                {contribute.isBusy
+                  ? mode === "deposit"
+                    ? "Depositing…"
+                    : "Donating…"
+                  : mode === "deposit"
+                    ? `Deposit → ${TOKEN}`
+                    : "Donate to the pool"}
+              </Button>
+            )}
+          </div>
+          {isConnected && amt > state.myUsd && (
+            <Caption className="text-system-warning mt-2 block">
+              You need more {STABLE} — mint some test {STABLE} on the right.
+            </Caption>
+          )}
+          <TxLine
+            status={approve.status}
+            hash={approve.hash}
+            error={approve.error}
+            successLabel={`Approved — now ${mode}.`}
+          />
+          <TxLine
+            status={contribute.status}
+            hash={contribute.hash}
+            error={contribute.error}
+            successLabel={
+              mode === "deposit"
+                ? `Deposited — ${TOKEN} minted 1:1.`
+                : "Donation sent to the funding pool."
+            }
+          />
+
+          {mode === "deposit" && (
+            <div className="border-paper-2 mt-5 border-t pt-4">
+              <Caption className="text-surface-grey-2 mb-1 block">
+                Redeem {TOKEN} → {STABLE} (1:1, anytime)
+              </Caption>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  value={redeemAmt}
+                  onChange={(e) => setRedeemAmt(e.target.value)}
+                  placeholder={String(Math.floor(state.myCusd))}
+                  className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-32 rounded-xl border px-3 py-2 text-sm outline-none"
+                />
+                <Button
+                  app="fund"
+                  variant="secondary"
+                  size="sm"
+                  disabled={
+                    !isConnected ||
+                    Number(redeemAmt || 0) <= 0 ||
+                    Number(redeemAmt || 0) > state.myCusd ||
+                    redeem.isBusy
+                  }
+                  onClick={() =>
+                    void redeem.run({
+                      address: COOP.token,
+                      abi: coopTokenAbi,
+                      functionName: "burn",
+                      args: [toCoopWei(Number(redeemAmt)), address],
+                    })
+                  }
+                >
+                  {redeem.isBusy ? "Redeeming…" : "Redeem"}
+                </Button>
+              </div>
+              <TxLine
+                status={redeem.status}
+                hash={redeem.hash}
+                error={redeem.error}
+                successLabel="Redeemed 1:1."
+              />
+            </div>
+          )}
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Card>
+            <Heading4 className="text-text-standard">Need test {STABLE}?</Heading4>
+            <Body className="text-surface-grey-2 mt-2 text-sm">
+              This demo runs on a testnet euro stablecoin with an open faucet —
+              mint yourself some to try a contribution.
+            </Body>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <input
+                type="number"
+                min={0}
+                value={faucetAmt}
+                onChange={(e) => setFaucetAmt(e.target.value)}
+                className="border-paper-2 bg-paper-main text-text-standard focus:border-core-orange w-32 rounded-xl border px-3 py-2 text-sm outline-none"
+              />
+              <Button
+                app="fund"
+                variant="secondary"
+                size="sm"
+                disabled={
+                  !isConnected || Number(faucetAmt || 0) <= 0 || faucet.isBusy
+                }
+                onClick={() =>
+                  void faucet.run({
+                    address: COOP.usd,
+                    abi: coopUsdAbi,
+                    functionName: "mint",
+                    args: [address, toCoopWei(Number(faucetAmt))],
+                  })
+                }
+              >
+                {faucet.isBusy ? "Minting…" : `Mint test ${STABLE}`}
+              </Button>
+            </div>
+            <TxLine
+              status={faucet.status}
+              hash={faucet.hash}
+              error={faucet.error}
+              successLabel={`Test ${STABLE} minted.`}
+            />
+          </Card>
+          <Card>
+            <Heading4 className="text-text-standard">Where the yield goes</Heading4>
+            <Body className="text-surface-grey-2 mt-2 text-sm">
+              Deposited principal sits in a yield vault; the interest it earns
+              accrues to the funding pool — {eur(state.artYield)} is ready to
+              distribute this cycle. When a funding round runs on the Vote tab,
+              that yield is split across the projects by the members&apos;
+              combined vote. Donations top the pool up directly.
+            </Body>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -433,7 +683,7 @@ function ResultsDistribution({ state }: { state: CoopState }) {
         <div className="text-right">
           <Caption className="text-surface-grey block">Funding pool</Caption>
           <Heading4 className="text-text-standard">
-            {usd(state.funds.artFund)}
+            {eur(state.funds.artFund)}
           </Heading4>
         </div>
       </div>
@@ -457,7 +707,7 @@ function ResultsDistribution({ state }: { state: CoopState }) {
               {p.title}
             </Caption>
             <Caption className="text-surface-grey hidden sm:block">
-              {usd((p.pct / 100) * state.funds.artFund)}
+              {eur((p.pct / 100) * state.funds.artFund)}
             </Caption>
             <Caption className="text-text-standard w-14 text-right font-bold">
               {p.pct.toFixed(1)}%
@@ -535,7 +785,7 @@ function VoteBallot({ state }: { state: CoopState }) {
                   {p.title}
                 </span>
                 <span className="text-surface-grey block text-xs">
-                  full {usd(p.full)} · min {usd(p.minViable)} · now {p.points}{" "}
+                  full {eur(p.full)} · min {eur(p.minViable)} · now {p.points}{" "}
                   pts community-wide
                 </span>
               </div>
@@ -731,7 +981,7 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <Caption className="text-surface-grey-2 mb-1 block">
-              Full budget (cUSD)
+              Full budget ({TOKEN})
             </Caption>
             <input
               type="number"
@@ -743,7 +993,7 @@ function RegisterProjectCard({ state }: { state: CoopState }) {
           </label>
           <label className="block">
             <Caption className="text-surface-grey-2 mb-1 block">
-              Min viable (cUSD)
+              Min viable ({TOKEN})
             </Caption>
             <input
               type="number"
@@ -821,8 +1071,8 @@ function QueuedProjectsCard({ state }: { state: CoopState }) {
                 {q.title}
               </span>
               <span className="text-surface-grey block text-xs">
-                {shortenAddress(q.addr)} · full {usd(q.full)} · min{" "}
-                {usd(q.minViable)}
+                {shortenAddress(q.addr)} · full {eur(q.full)} · min{" "}
+                {eur(q.minViable)}
               </span>
             </div>
           ))}

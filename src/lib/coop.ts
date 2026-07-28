@@ -546,7 +546,7 @@ async function fetchActivity(projects: CoopProject[]): Promise<{
   const projectTitle = (a: string) =>
     projects.find((p) => p.addr.toLowerCase() === a.toLowerCase())?.title ??
     shortAddr(a);
-  const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+  const usd = (n: number) => `€${Math.round(n).toLocaleString("en-US")}`;
 
   all.sort((a, b) =>
     a.blockNumber === b.blockNumber
@@ -853,13 +853,13 @@ function demoCoopState(account?: Address): CoopState {
       when: "2026-07-21 09:12",
       actor: "strategy",
       kind: "funded",
-      text: "Funded Newsmast with $2,000",
+      text: "Funded Newsmast with €2,000",
     },
     {
       when: "2026-07-21 09:12",
       actor: "manager",
       kind: "round",
-      text: "Round #6 distributed $4,100 of $5,400 pool across 3 projects",
+      text: "Round #6 distributed €4,100 of €5,400 pool across 3 projects",
     },
     {
       when: "2026-07-18 20:41",
@@ -871,7 +871,7 @@ function demoCoopState(account?: Address): CoopState {
       when: "2026-07-16 11:05",
       actor: nameOf(coordinator),
       kind: "proposal",
-      text: 'Registered "Meet.coop" (full $3,500, min $1,500)',
+      text: 'Registered "Meet.coop" (full €3,500, min €1,500)',
     },
     {
       when: "2026-07-12 14:20",
