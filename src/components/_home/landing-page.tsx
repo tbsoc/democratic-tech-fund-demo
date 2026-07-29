@@ -15,8 +15,6 @@ import {
 import { AsteriskMark, OurCoopLogo } from "@/components/ourcoop-logo";
 import { FundingCalculator } from "@/components/_home/funding-calculator";
 import { HowItWorks } from "@/components/_home/how-it-works";
-import { YieldEngine } from "@/components/_home/yield-engine";
-import { YieldSliceExplainer } from "@/components/_home/yield-slice-explainer";
 
 /** Static-export base path — public assets and static pages live under it. */
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -35,11 +33,9 @@ export function LandingPage() {
         <WhatWeDo />
         <KeyConcepts />
         <Features />
-        <CalculatorSection />
-        <UnderTheHood />
-        <YieldSliceExplainer />
         <HowItWorks />
-        <YieldEngine />
+        <UnderTheHood />
+        <CalculatorSection />
         <Membership />
         <CtaBand />
       </main>
@@ -150,10 +146,9 @@ function Hero() {
 
         <Body className="mt-7 max-w-2xl text-lg text-[#f3e7d0]/80">
           Imagine funding contra-infrastructure without anyone spending their
-          savings. Members pool capital into a shared vault; the principal stays
-          theirs, redeemable any time. Only the yield it earns is spent — and
-          members vote, together, which community-tech projects each round
-          funds.
+          savings. Members pool money together; it stays theirs to take back any
+          time, and only the interest it earns is spent — with members voting,
+          together, on which community-tech projects each round funds.
         </Body>
 
         <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -254,16 +249,16 @@ const CONCEPTS = [
     body: "Voting power comes from membership, not from the size of your contribution. Every member's ballot weighs exactly the same — the whole point of democratic tech.",
   },
   {
-    title: "Points ballots",
-    body: "Each round you get 100 points to spread across project proposals however you like — all on one project, or a little everywhere. The sum is capped at 100.",
+    title: "Split by the vote",
+    body: "Each round you spread your points across the projects however you like — all on one, or a little everywhere. The points set a ratio, and the pool is shared out in those proportions.",
   },
   {
     title: "Funding rounds",
-    body: "Each cycle's yield becomes that round's funding pool. Top-voted projects fund up to their full-budget caps; proposals that can't reach their minimum-viable floor pass their share down the list.",
+    body: "Every cycle, the interest the pool has earned is shared among the projects by the members' combined vote — then a fresh round begins.",
   },
   {
-    title: "Principal stays yours",
-    body: "Contributions are redeemable 1:1 at any time. Only the yield is ever spent — leaving the Fund never costs you your stake.",
+    title: "Your money stays yours",
+    body: "You can take your contribution back in full at any time. Only the interest it earns is ever spent — taking part never costs you your savings.",
   },
 ];
 
@@ -304,22 +299,22 @@ const FEATURES = [
   {
     icon: Coins,
     title: "A pool that pays for tech",
-    body: "Members stake into a shared yield-bearing vault. The principal is never spent — only the interest it earns, cycle after cycle.",
+    body: "Members add to a shared pool that earns interest. The pool itself is never spent — only the interest it earns, cycle after cycle.",
   },
   {
     icon: Wrench,
     title: "Project proposals",
-    body: "Members put forward work — self-hosted apps, community clouds, training, research — each with a full budget and a minimum-viable floor.",
+    body: "Members put forward work — self-hosted apps, community clouds, training, research — each with a short description and where the funding should go.",
   },
   {
     icon: ArrowsClockwise,
     title: "Cycle-based rounds",
-    body: "Fixed-length cycles keep funding predictable: ballots close, the round's yield is split, and a fresh funding pool starts accruing.",
+    body: "Fixed-length cycles keep funding predictable: voting closes, the interest is shared out, and a fresh pool starts building.",
   },
   {
     icon: ShieldCheck,
     title: "Open source, community-controlled",
-    body: "Open, auditable smart contracts the community owns — each funding circle sets its own voting rules and yield strategy, with nothing locked to a vendor.",
+    body: "Open, auditable and community-owned — each funding circle sets its own rules for voting and where the pool earns, with nothing locked to a vendor.",
   },
 ];
 
@@ -357,32 +352,21 @@ function Features() {
 function CalculatorSection() {
   return (
     <section id="calculator" className="bg-paper-1 py-20">
-      <div className="section-container grid items-center gap-12 lg:grid-cols-2">
-        <div>
-          <div className="flex items-center gap-3">
-            <AsteriskMark size={22} className="text-core-orange" />
-            <Heading2 className="text-text-standard">
-              What a fund this size can sustain
-            </Heading2>
-          </div>
-          <Body className="text-surface-grey mt-6 max-w-xl text-lg">
-            Real math with adjustable assumptions. Slide the membership and the
-            contribution to see the funding pool a community like yours could
-            sustain — without anyone spending their savings.
-          </Body>
-          <div className="mt-8 flex items-center gap-2.5">
-            <ArrowRight size={18} weight="bold" className="text-core-orange" />
-            <Caption className="text-surface-grey font-semibold">
-              Presets sized like real community-tech projects
-            </Caption>
-          </div>
-          <div className="mt-10 flex gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <AsteriskMark key={i} size={12} className="text-primary-jade" />
-            ))}
-          </div>
+      <div className="section-container">
+        <div className="flex items-center justify-center gap-3">
+          <AsteriskMark size={22} className="text-core-orange" />
+          <Heading2 className="text-text-standard text-center">
+            What a fund this size can sustain
+          </Heading2>
         </div>
-        <FundingCalculator />
+        <Body className="text-surface-grey mx-auto mt-4 max-w-2xl text-center text-lg">
+          Slide the membership and the average contribution to see the funding a
+          community like yours could sustain each month — without anyone
+          spending their savings.
+        </Body>
+        <div className="mt-8 flex justify-center">
+          <FundingCalculator />
+        </div>
       </div>
     </section>
   );
@@ -396,14 +380,16 @@ function UnderTheHood() {
       <div className="section-container text-center">
         <div className="flex items-center justify-center gap-3">
           <AsteriskMark size={22} className="text-core-orange" />
-          <Heading2 className="text-text-standard">Under the hood</Heading2>
+          <Heading2 className="text-text-standard">
+            Where the funding comes from
+          </Heading2>
         </div>
-        <Body className="text-surface-grey mx-auto mt-6 max-w-4xl text-lg">
-          The Fund runs on a smart-contract system on Gnosis Chain. Members&apos;
-          deposits are converted into yield-bearing stablecoins (sDAI), and in
-          exchange members receive a redeemable token minted 1:1 against their
-          deposit. All interest earned becomes the Fund&apos;s grant pool — the
-          principal itself is never touched.
+        <Body className="text-surface-grey mx-auto mt-6 max-w-3xl text-lg">
+          Members&apos; contributions are pooled and put to work earning safe,
+          steady interest — the way money in a savings account earns yield.
+          Nobody&apos;s contribution is ever spent: it stays theirs to take back
+          at any time. Only the interest the pool earns is shared out, and
+          members vote each round on which projects it funds.
         </Body>
       </div>
     </section>
@@ -510,9 +496,9 @@ function Membership() {
         </div>
 
         <Body className="text-surface-grey mx-auto mt-8 max-w-3xl text-center text-sm">
-          Illustrative mapping for this demo. Contribution-to-yield figures
-          depend on the vault&apos;s rate; the point is that members fund the
-          Fund without giving up their principal.
+          Illustrative mapping for this demo. The exact figures depend on the
+          interest rate; the point is that members fund the work without giving
+          up their money.
         </Body>
       </div>
     </section>

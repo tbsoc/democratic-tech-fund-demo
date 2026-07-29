@@ -32,27 +32,27 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    title: "Members pool assets",
-    body: "Members stake into the Fund's shared pool and receive cUSD 1:1 — the deposit stays theirs.",
+    title: "Members contribute",
+    body: "Members add money to the Fund's shared pool. It stays theirs — they can take it back in full at any time.",
     caption: "Members → funding pool",
     Visual: PoolVisual,
   },
   {
-    title: "Automated interest generation",
-    body: "Funds are automatically generating yield through overcollateralized loans.",
-    caption: "Only the yield grows — principal stays whole",
+    title: "The pool earns interest",
+    body: "The pooled money earns safe, steady interest — the way a savings account does. Only that interest is ever spent.",
+    caption: "Only the interest grows — the pool stays whole",
     Visual: YieldVisual,
   },
   {
-    title: "Members vote with 100-point ballots",
-    body: "Each member spreads 100 points across project proposals — one member, one ballot, whatever their stake.",
-    caption: "100-point ballots split the yield",
+    title: "Members vote",
+    body: "Each member splits their points across the projects — one member, one ballot, whatever they put in.",
+    caption: "Ballots set how the interest is split",
     Visual: VoteVisual,
   },
   {
     title: "Projects get funded",
-    body: "The round's funding pool pays the winning projects while members retain their original principal.",
-    caption: "Yield → projects · principal returns 1:1",
+    body: "The interest is shared among the projects by the vote — while members keep every cent of what they put in.",
+    caption: "Interest → projects · contributions returned in full",
     Visual: FundVisual,
   },
 ];
@@ -184,16 +184,16 @@ function YieldVisual() {
           <TrendUp size={16} weight="bold" className="text-white" />
         </div>
         <div className="bg-primary-jade mt-1 flex h-[52%] items-center justify-center rounded-md">
-          <span className="text-[10px] font-bold text-white">Principal</span>
+          <span className="text-[10px] font-bold text-white">Your money</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <span className="hiw-rise border-core-orange/30 bg-core-orange/10 text-core-orange inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold">
-          <TrendUp size={13} weight="bold" /> + yield
+          <TrendUp size={13} weight="bold" /> + interest
         </span>
         <span className="border-primary-jade/30 bg-primary-jade/10 text-primary-jade inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold">
-          <ShieldCheck size={13} weight="bold" /> Over-collateralized
+          <ShieldCheck size={13} weight="bold" /> Stays yours
         </span>
       </div>
     </div>
