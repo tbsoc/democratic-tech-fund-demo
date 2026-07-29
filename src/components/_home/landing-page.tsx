@@ -7,9 +7,7 @@ import {
   Coins,
   GlobeHemisphereWest,
   GraduationCap,
-  HandHeart,
   ShieldCheck,
-  UsersThree,
   Wrench,
 } from "@phosphor-icons/react/dist/ssr";
 import { AsteriskMark, OurCoopLogo } from "@/components/ourcoop-logo";
@@ -36,7 +34,6 @@ export function LandingPage() {
         <HowItWorks />
         <UnderTheHood />
         <CalculatorSection />
-        <Membership />
         <CtaBand />
       </main>
       <SiteFooter />
@@ -60,7 +57,6 @@ function SiteNav() {
         <div className="hidden items-center gap-8 md:flex">
           <NavLink href="#what-we-do">What we do</NavLink>
           <NavLink href="#how-it-works">How it works</NavLink>
-          <NavLink href="#membership">Membership</NavLink>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -162,10 +158,10 @@ function Hero() {
             Explore the Fund
           </Button>
           <a
-            href="#membership"
+            href="#how-it-works"
             className="text-sm font-medium text-[#f3e7d0]/70 underline underline-offset-4 transition-colors hover:text-[#f3e7d0]"
           >
-            See how membership maps on
+            See how it works
           </a>
         </div>
 
@@ -390,115 +386,6 @@ function UnderTheHood() {
           Nobody&apos;s contribution is ever spent: it stays theirs to take back
           at any time. Only the interest the pool earns is shared out, and
           members vote each round on which projects it funds.
-        </Body>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------ Membership ------------------------------- */
-
-const TIERS = [
-  {
-    name: "Community",
-    price: "Free",
-    cadence: "",
-    blurb: "Read access, newsletters, and the community spaces. No contribution required.",
-    role: "Participant",
-    featured: false,
-  },
-  {
-    name: "Backer",
-    price: "€5",
-    cadence: "/mo equivalent",
-    blurb: "The most popular tier — a steady contribution to the work, now delivered as yield instead of dues.",
-    role: "Supporter",
-    featured: true,
-  },
-  {
-    name: "Full membership",
-    price: "€10+",
-    cadence: "/mo equivalent",
-    blurb: "Full governance rights: vote in the General Assembly and in every funding round.",
-    role: "Voting member",
-    featured: false,
-  },
-  {
-    name: "Funder",
-    price: "€25",
-    cadence: "/mo equivalent",
-    blurb: "Funder rights in a designated Funding Circle, including project selection and meetings with founders.",
-    role: "Funding Circle",
-    featured: false,
-  },
-  {
-    name: "Champion",
-    price: "€84",
-    cadence: "/mo equivalent",
-    blurb: "Everything in Funder, plus an annual impact report on what the pool funded.",
-    role: "Funding Circle+",
-    featured: false,
-  },
-];
-
-function Membership() {
-  return (
-    <section id="membership" className="bg-paper-1 py-20">
-      <div className="section-container">
-        <div className="flex items-center justify-center gap-3">
-          <UsersThree size={26} weight="bold" className="text-core-orange" />
-          <Heading2 className="text-text-standard text-center">
-            Your membership tiers, reimagined
-          </Heading2>
-        </div>
-        <Body className="text-surface-grey mx-auto mt-4 max-w-3xl text-center text-lg">
-          DTF&apos;s existing tiers map cleanly onto this model. The same
-          monthly commitment becomes a one-time contribution members keep — its
-          yield funds the work, and governance rights scale by tier, not by
-          balance.
-        </Body>
-
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-          {TIERS.map((t) => (
-            <div
-              key={t.name}
-              className={`relative flex flex-col rounded-2xl border p-6 transition-shadow hover:shadow-lg ${
-                t.featured
-                  ? "border-core-orange bg-paper-0 shadow-lg"
-                  : "border-paper-2 bg-paper-0"
-              }`}
-            >
-              {t.featured && (
-                <span className="bg-core-orange absolute -top-3 left-6 rounded-full px-3 py-0.5 text-[0.65rem] font-bold tracking-wide text-white uppercase">
-                  Most popular
-                </span>
-              )}
-              <Caption className="text-core-orange font-bold tracking-wide uppercase">
-                {t.name}
-              </Caption>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="font-breadDisplay text-text-standard text-2xl">
-                  {t.price}
-                </span>
-                <span className="text-surface-grey text-xs">{t.cadence}</span>
-              </div>
-              <Body className="text-surface-grey mt-3 flex-1 text-sm">
-                {t.blurb}
-              </Body>
-              <div className="border-paper-2 mt-5 flex items-center gap-2 border-t pt-4">
-                <HandHeart size={16} weight="bold" className="text-primary-jade" />
-                <Caption className="text-text-standard font-semibold">
-                  {t.role}
-                </Caption>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Body className="text-surface-grey mx-auto mt-8 max-w-3xl text-center text-sm">
-          Illustrative mapping for this demo. The exact figures depend on the
-          interest rate; the point is that members fund the work without giving
-          up their money.
         </Body>
       </div>
     </section>
