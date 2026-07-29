@@ -30,6 +30,7 @@ const VIEWS = [
   ["overview", "Overview"],
   ["contribute", "Contribute"],
   ["vote", "Vote"],
+  ["impact", "Impact"],
   ["members", "Members"],
 ] as const;
 type ViewId = (typeof VIEWS)[number][0];
@@ -80,6 +81,7 @@ export default function CoopPage() {
             )}
             {view === "contribute" && <ContributeView state={data} />}
             {view === "vote" && <VoteView state={data} />}
+            {view === "impact" && <ImpactView state={data} />}
             {view === "members" && <MembersView state={data} />}
             <div className="mt-10 flex items-center justify-between">
               <Caption className="text-surface-grey">
@@ -934,6 +936,86 @@ function RecentActivity({ state }: { state: CoopState }) {
         </div>
       ))}
     </Card>
+  );
+}
+
+/* --------------------------------- Impact --------------------------------- */
+
+function ImpactView({ state }: { state: CoopState }) {
+  const reported = state.projects.filter((p) => p.impact.length > 0);
+  const totalReported = state.projects.reduce(
+    (a, p) => a + p.impact.reduce((s, r) => s + r.amount, 0),
+    0,
+  );
+  const reportCount = state.projects.reduce((a, p) => a + p.impact.length, 0);
+  return (
+    <div>
+      <div className="mt-6">
+        <PageHeader
+          title="Impact"
+          subtitle="What each project has done with the funding it received. Reports are self-published by the projects — a track record to weigh when you vote."
+        />
+      </div>
+      <div className="mt-2 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Reported to date" value={eur(totalReported)} accent />
+        <StatCard label="Projects reporting" value={reported.length} />
+        <StatCard label="Impact updates" value={reportCount} />
+      </div>
+      {reported.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState>No impact reports yet.</EmptyState>
+        </div>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {reported.map((p) => {
+            const total = p.impact.reduce((s, r) => s + r.amount, 0);
+            return (
+              <Card key={p.addr}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Heading4 className="text-text-standard">{p.title}</Heading4>
+                    <Caption className="text-surface-grey mt-0.5 block">
+                      {p.summary}
+                    </Caption>
+                  </div>
+                  <div className="text-right">
+                    <Caption className="text-surface-grey block">
+                      Reported
+                    </Caption>
+                    <span className="font-breadDisplay text-text-standard text-lg">
+                      {eur(total)}
+                    </span>
+                  </div>
+                </div>
+                <div className="border-paper-2 mt-4 border-t">
+                  {p.impact.map((r, i) => (
+                    <div
+                      key={i}
+                      className="border-paper-2 flex flex-wrap items-start gap-x-4 gap-y-1 border-b py-3 last:border-0"
+                    >
+                      <span className="text-surface-grey w-20 shrink-0 text-xs">
+                        {r.when}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-text-standard text-sm font-semibold">
+                          {r.title}
+                        </span>
+                        <span className="text-surface-grey block text-xs">
+                          {r.detail}
+                        </span>
+                      </div>
+                      <span className="text-core-orange shrink-0 text-sm font-bold">
+                        {eur(r.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

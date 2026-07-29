@@ -148,6 +148,18 @@ export type WithdrawalStatus = (typeof WITHDRAWAL_STATUS)[number];
 
 /* --------------------------------- State --------------------------------- */
 
+/** A project's self-reported impact milestone: money used + what it achieved. */
+export interface ImpactReport {
+  /** Reporting period, e.g. "Jun 2026". */
+  when: string;
+  /** Funding this milestone used (display units). */
+  amount: number;
+  /** Short headline of the achievement. */
+  title: string;
+  /** One–two sentences on the impact. */
+  detail: string;
+}
+
 export interface CoopProject {
   idx: number;
   addr: Address;
@@ -158,6 +170,8 @@ export interface CoopProject {
   minViable: number;
   points: number;
   funded: number;
+  /** Self-published impact reports (empty when read straight from chain). */
+  impact: ImpactReport[];
 }
 
 export interface CoopWithdrawal {
@@ -396,6 +410,7 @@ export async function fetchCoopState(account?: Address): Promise<CoopState> {
         minViable: toUsd(p.minViableBudget),
         points: idx < points.length ? Number(points[idx]) : 0,
         funded: toUsd(bal),
+        impact: [],
       };
     }),
   );
@@ -720,6 +735,22 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 3500,
     points: 24,
     funded: 2000,
+    impact: [
+      {
+        when: "Jun 2026",
+        amount: 1800,
+        title: "Shipped one-tap community onboarding",
+        detail:
+          "New onboarding flow moved 6 local groups — roughly 2,400 people — off Big Tech platforms onto member-run servers.",
+      },
+      {
+        when: "Apr 2026",
+        amount: 1200,
+        title: "Released shared moderation tools",
+        detail:
+          "Block-lists and reporting that let small communities self-moderate safely across the open network.",
+      },
+    ],
   },
   {
     idx: 1,
@@ -731,6 +762,22 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 1500,
     points: 20,
     funded: 1200,
+    impact: [
+      {
+        when: "Jun 2026",
+        amount: 900,
+        title: "A year of self-hosting covered",
+        detail:
+          "Funded hosting, backups and maintenance keeping bulk ordering live for 60 households.",
+      },
+      {
+        when: "Feb 2026",
+        amount: 600,
+        title: "Rebuilt the order-round interface",
+        detail:
+          "Cut the volunteer admin time per ordering cycle roughly in half.",
+      },
+    ],
   },
   {
     idx: 2,
@@ -742,6 +789,15 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 2500,
     points: 18,
     funded: 0,
+    impact: [
+      {
+        when: "May 2026",
+        amount: 1500,
+        title: "Onboarded 4 new communities",
+        detail:
+          "Stood up member-owned Nextcloud + collaboration stacks on the Co-op Cloud Federation.",
+      },
+    ],
   },
   {
     idx: 3,
@@ -753,6 +809,15 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 2000,
     points: 16,
     funded: 0,
+    impact: [
+      {
+        when: "Jun 2026",
+        amount: 1500,
+        title: "Ran a matching-funds round",
+        detail:
+          "Matched community donations across 12 commons campaigns, unlocking about €40k in total funding.",
+      },
+    ],
   },
   {
     idx: 4,
@@ -764,6 +829,15 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 1800,
     points: 12,
     funded: 0,
+    impact: [
+      {
+        when: "Mar 2026",
+        amount: 800,
+        title: "Open-sourced the document suite",
+        detail:
+          "Converted a state-funded editor into a commons module co-ops can self-host and co-own.",
+      },
+    ],
   },
   {
     idx: 5,
@@ -775,6 +849,15 @@ const DEMO_PROJECTS: CoopProject[] = [
     minViable: 1200,
     points: 10,
     funded: 900,
+    impact: [
+      {
+        when: "May 2026",
+        amount: 700,
+        title: "Published 8 new app recipes",
+        detail:
+          "One-command deploys for chat, calendar and file-sync so co-ops can self-host faster.",
+      },
+    ],
   },
 ];
 
